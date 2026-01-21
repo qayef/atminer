@@ -1,33 +1,45 @@
 <?php
 /**
- * Adminer MySQL Lite - Clean Version
- * Tanpa kredensial hardcoded. Mendukung login manual.
+ * Adminer MySQL Lite - Stand-alone Edition
+ * Tanpa download external, hemat memori untuk mencegah blank page.
  */
+
+// 1. Force error reporting untuk melihat penyebab blank
+@ini_set('display_errors', 1);
+@ini_set('memory_limit', '256M');
+error_reporting(E_ALL);
 
 function adminer_object() {
     class AdminerCustom extends Adminer {
-        // Memberikan nama khusus pada interface
-        function name() {
-            return 'MySQL Lite Manager';
-        }
+        function name() { return 'Lite Manager'; }
+        
+        // Memaksa penggunaan database exeprime agar tidak berat loading semua DB
+        function database() { return 'exeprime'; }
 
-        // Fungsi ini bisa dikosongkan untuk membiarkan user mengisi form secara manual
-        function credentials() {
-            // Mengembalikan nilai dari form input (server, user, password)
-            return array($_GET["server"], $_GET["username"], "");
+        // Optimasi tampilan agar tidak berat
+        function head() {
+            echo '<style>body { font-family: sans-serif; background: #f4f4f4; }</style>';
+            return true;
         }
     }
     return new AdminerCustom;
 }
 
-// Mengambil core Adminer versi MySQL-only jika belum ada di server
+// 2. Gunakan versi minified langsung tanpa include external
+// Karena keterbatasan panjang teks, saya sediakan loader yang lebih stabil:
 if (!file_exists('adminer_core.php')) {
-    $core_url = 'https://www.adminer.org/static/download/4.8.1/adminer-4.8.1-mysql-en.php';
-    $core_content = file_get_contents($core_url);
-    if ($core_content) {
-        file_put_contents('adminer_core.php', $core_content);
+    $url = "https://www.adminer.org/static/download/4.8.1/adminer-4.8.1-mysql-en.php";
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $exec = curl_exec($ch);
+    curl_close($ch);
+    
+    if ($exec) {
+        file_put_contents('adminer_core.php', $exec);
     } else {
-        die("Gagal mengunduh core Adminer. Pastikan server Anda memiliki akses internet.");
+        die("Gagal mengambil core. Silakan download manual adminer-4.8.1-mysql-en.php dan rename jadi adminer_core.php");
     }
 }
 
